@@ -28,6 +28,9 @@
         <service
             android:name=".FetchAddressIntentService"
             android:exported="false"/>
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyD8iY2ksh9QVJ2bzHBBDlAuvCnX4YJ3uMY"/>
     </application>
 
 </manifest>

@@ -18,36 +18,26 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-
-import android.Manifest;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Geocoder;
-import android.location.Location;
-import android.net.Uri;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.ResultReceiver;
-import android.provider.Settings;
-import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.View;
 import android.widget.Button;
-import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.PlaceLikelihood;
+import com.google.android.gms.location.places.PlaceLikelihoodBuffer;
+import com.google.android.gms.location.places.Places;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 import static android.provider.AlarmClock.EXTRA_MESSAGE;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnConnectionFailedListener {
 
     public void sendMessage(View view) {
         Intent intent = new Intent(this, DisplayMessageActivity.class);
@@ -58,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private GoogleApiClient mGoogleApiClient;
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -112,6 +103,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mGoogleApiClient = new GoogleApiClient
+                .Builder(this)
+                .addApi(Places.GEO_DATA_API)
+                .addApi(Places.PLACE_DETECTION_API)
+                .enableAutoManage(this, this)
+                .build();
+        mGoogleApiClient.connect();
+
         mResultReceiver = new AddressResultReceiver(new Handler());
 
         mLocationAddressTextView = (TextView) findViewById(R.id.location_address_view);
@@ -126,6 +125,38 @@ public class MainActivity extends AppCompatActivity {
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         updateUIWidgets();
+    }
+
+    public void onConnectionFailed(ConnectionResult result) {
+
+    }
+
+    public void fetchPlaceButtonHandler(View view) {
+        if (!checkPermissions()) {
+            requestPermissions();
+        } else {
+            getPlace();
+        }
+    }
+
+    private void getPlace() {
+        try {
+            PendingResult<PlaceLikelihoodBuffer> result = Places.PlaceDetectionApi
+                    .getCurrentPlace(mGoogleApiClient, null);
+            result.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {
+                @Override
+                public void onResult(PlaceLikelihoodBuffer likelyPlaces) {
+                    for (PlaceLikelihood placeLikelihood : likelyPlaces) {
+                        Log.i(TAG, String.format("Place '%s' has likelihood: %g",
+                                placeLikelihood.getPlace().getName(),
+                                placeLikelihood.getLikelihood()));
+                    }
+                    likelyPlaces.release();
+                }
+            });
+        } catch (SecurityException) {
+
+        }
     }
 
     @Override

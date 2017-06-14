@@ -94,7 +94,7 @@ public class FetchAddressIntentService extends IntentService {
                     location.getLatitude(),
                     location.getLongitude(),
                     // In this sample, we get just a single address.
-                    1);
+                    10);
         } catch (IOException ioException) {
             // Catch network or other I/O problems.
             errorMessage = getString(R.string.service_not_available);
@@ -115,6 +115,14 @@ public class FetchAddressIntentService extends IntentService {
             }
             deliverResultToReceiver(Constants.FAILURE_RESULT, errorMessage);
         } else {
+            for (Address address: addresses
+                 ) {
+                ArrayList<String> addressFragments = new ArrayList<>();
+                for(int i = 0; i < address.getMaxAddressLineIndex(); i++) {
+                    addressFragments.add(address.getAddressLine(i));
+                }
+                Log.i(TAG, TextUtils.join(System.getProperty("\t"), addressFragments));
+            }
             Address address = addresses.get(0);
             ArrayList<String> addressFragments = new ArrayList<>();
 
